@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import Swal from 'sweetalert2';
 import { getInventoryItemByName, increaseQuantity, decreaseQuantity } from '@/services/inventoryCrud';
 import { AlertCircle, CheckCircle, Loader, Camera, X, Zap, Smartphone } from 'lucide-react';
 
@@ -252,23 +253,37 @@ export const QRCodeScanner = () => {
       const updatedItem = await getInventoryItemByName(scannedItem);
       const currentQuantity = updatedItem?.quantity || 0;
 
-      if (action === 'deduct') {
-        setMessage(`✓ Deducted ${quantity} from ${scannedItem}\nCurrent Stock: ${currentQuantity}`);
-      } else {
-        setMessage(`✓ Added ${quantity} to ${scannedItem}\nCurrent Stock: ${currentQuantity}`);
-      }
+      const title = action === 'deduct' ? '✓ Deducted' : '✓ Added';
+      const message = `${quantity} ${action === 'deduct' ? 'from' : 'to'} ${scannedItem}`;
+
+      // Show SweetAlert popup
+      await Swal.fire({
+        icon: 'success',
+        title: title,
+        html: `<p>${message}</p><p style="margin-top: 10px; font-size: 14px;"><strong>Current Stock: ${currentQuantity}</strong></p>`,
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#3b82f6',
+      });
 
       setStatus('success');
       setShowQuantityForm(false);
       setScannedItem(null);
-      
-      setTimeout(() => {
-        setStatus('idle');
-        setMessage('');
-      }, 3000);
+      setStatus('idle');
+      setMessage('');
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update inventory';
+      
+      // Show error alert
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: errorMessage,
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#ef4444',
+      });
+
       setStatus('error');
-      setMessage(error instanceof Error ? error.message : 'Failed to update inventory');
+      setMessage(errorMessage);
     }
   };
 
@@ -307,7 +322,7 @@ export const QRCodeScanner = () => {
           className="w-full h-full object-cover"
           style={{ 
             display: scanning ? 'block' : 'none', 
-            transform: isMirrored ? 'scaleX(-1)' : 'scaleX(-1)'
+            transform: isMirrored ? 'scaleX(1)' : 'scaleX(-1)'
           }}
           onPlay={() => console.log('Video onPlay triggered')}
           onLoadedMetadata={() => console.log('Video onLoadedMetadata triggered')}
