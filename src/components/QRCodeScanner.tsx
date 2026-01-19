@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { getInventoryItemByName, increaseQuantity, decreaseQuantity } from '@/services/inventoryCrud';
-import { AlertCircle, CheckCircle, Loader, Camera, X,FlipHorizontal2Icon, Rotate3dIcon } from 'lucide-react';
+import { AlertCircle, CheckCircle, Loader, Camera, X, Zap, Smartphone } from 'lucide-react';
 
 export const QRCodeScanner = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const frameCountRef = useRef(0);
   const [scanning, setScanning] = useState(false);
   const [status, setStatus] = useState<'idle' | 'scanning' | 'processing' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState<string>('');
@@ -27,8 +29,9 @@ export const QRCodeScanner = () => {
       const constraints = {
         video: {
           facingMode: facingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { ideal: 720 },
+          height: { ideal: 720 },
+          aspectRatio: { ideal: 1 }
         },
         audio: false
       };
@@ -50,6 +53,8 @@ export const QRCodeScanner = () => {
             console.log('Video playing');
             setScanning(true);
             setMessage('Camera ready - Point at QR code');
+            // Start frame scanning
+            requestAnimationFrame(scanFrame);
           } catch (playError) {
             console.error('Play error:', playError);
             setMessage('Error: Could not play video stream');
@@ -135,6 +140,100 @@ export const QRCodeScanner = () => {
     setMessage(isMirrored ? 'Mirror off' : 'Mirror on');
   };
 
+  // Scan QR/Barcode from video frame (optimized for mobile)
+  const scanFrame = async () => {
+    if (!videoRef.current || !scanning || status === 'processing') return;
+
+    // Skip frames on mobile for better performance (scan every 3rd frame)
+    frameCountRef.current++;
+    if (frameCountRef.current % 3 !== 0) {
+      if (scanning) {
+        requestAnimationFrame(scanFrame);
+      }
+      return;
+    }
+
+    try {
+      const video = videoRef.current;
+      
+      if (!canvasRef.current) {
+        const canvas = document.createElement('canvas');
+        canvasRef.current = canvas;
+      }
+      
+      const canvas = canvasRef.current;
+      
+      // Resize canvas to video dimensions (max 640x480 for performance)
+      const maxWidth = Math.min(video.videoWidth, 640);
+      const scale = maxWidth / video.videoWidth;
+      canvas.width = maxWidth;
+      canvas.height = Math.min(video.videoHeight * scale, 480);
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // Draw video frame
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Get image data
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+      // Try to decode QR code using jsQR
+      const jsQR = (window as any).jsQR;
+      if (jsQR) {
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        if (code) {
+          const qrData = code.data;
+          console.log('QR Code detected:', qrData);
+          
+          try {
+            const parsed = JSON.parse(qrData);
+            if (parsed.itemName) {
+              setScanning(false);
+              setStatus('processing');
+              setMessage('Processing item...');
+              
+              const item = await getInventoryItemByName(parsed.itemName);
+              if (item) {
+                setScannedItem(parsed.itemName);
+                setQuantity(1);
+                setAction('deduct');
+                setShowQuantityForm(true);
+                setStatus('idle');
+                setMessage('');
+              } else {
+                setStatus('error');
+                setMessage(`Item "${parsed.itemName}" not found`);
+                setScanning(true);
+              }
+            }
+          } catch (e) {
+            // Try as plain text
+            const item = await getInventoryItemByName(qrData);
+            if (item) {
+              setScanning(false);
+              setScannedItem(qrData);
+              setQuantity(1);
+              setAction('deduct');
+              setShowQuantityForm(true);
+            } else {
+              setStatus('error');
+              setMessage(`Item "${qrData}" not found`);
+              setScanning(true);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Frame scan error:', error);
+    }
+
+    // Continue scanning
+    if (scanning) {
+      requestAnimationFrame(scanFrame);
+    }
+  };
+
   // Process item with user-selected quantity
   const handleConfirmQuantity = async () => {
     if (!scannedItem) return;
@@ -174,6 +273,14 @@ export const QRCodeScanner = () => {
   };
 
   useEffect(() => {
+    // Load jsQR library
+    if (!(window as any).jsQR) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+      script.async = true;
+      document.head.appendChild(script);
+    }
+
     return () => {
       stopCamera();
     };
@@ -200,7 +307,7 @@ export const QRCodeScanner = () => {
           className="w-full h-full object-cover"
           style={{ 
             display: scanning ? 'block' : 'none', 
-            transform: scanning ? `scaleX(-1) ${isMirrored ? 'scaleX(1)' : 'scaleX(-1)'}` : 'none'
+            transform: isMirrored ? 'scaleX(-1)' : 'scaleX(-1)'
           }}
           onPlay={() => console.log('Video onPlay triggered')}
           onLoadedMetadata={() => console.log('Video onLoadedMetadata triggered')}
@@ -278,10 +385,11 @@ export const QRCodeScanner = () => {
             <button
               onClick={flipCamera}
               className="px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors duration-300 text-sm sm:text-base flex items-center gap-2"
-              title="Flip camera"
+              title="Switch between front and back camera"
             >
-              <Rotate3dIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="hidden sm:inline">Flip</span>
+              <Smartphone className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">Switch Camera</span>
+              <span className="sm:hidden">{facingMode === 'environment' ? '📷' : '📱'}</span>
             </button>
             <button
               onClick={toggleMirror}
@@ -292,7 +400,7 @@ export const QRCodeScanner = () => {
               }`}
               title="Mirror video"
             >
-              <FlipHorizontal2Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
               <span className="hidden sm:inline">Mirror</span>
             </button>
           </div>

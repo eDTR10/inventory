@@ -33,11 +33,13 @@ export const parseQRCodeData = (qrString: string): string | null => {
 /**
  * Generate QR code URL using a free QR code API
  * (qr-server.com is a free service)
+ * Includes margin parameter for white space around the QR code
  */
 export const getQRCodeImageUrl = (itemName: string, size: number = 200): string => {
   const data = generateQRCodeData(itemName);
   const encoded = encodeURIComponent(data);
-  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encoded}`;
+  // margin parameter adds white space border (15 = generous padding)
+  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encoded}&margin=15`;
 };
 
 export default {
