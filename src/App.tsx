@@ -1,4 +1,6 @@
 import { ThemeProvider } from "@/components/theme-provider"
+import { AuthProvider } from "@/context/AuthContext"
+import UserProfile from "@/components/UserProfile"
 
 import viteLogo from "/vite.svg";
 
@@ -13,10 +15,12 @@ function App() {
 
 
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-     <div className=" bg-background min-h-screen w-full overflow-hidden flex flex-col  items-center">
+    <AuthProvider>
+      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+        <UserProfile />
+       <div className=" bg-background min-h-screen w-full overflow-hidden flex flex-col  items-center">
       
-      <nav className=" animate__animated animate__slideInDown  z-20 bg-background fixed flex justify-between items-center w-full max-w-[1468px] py-5 border-b-[0px] border-accent \ ">
+      <nav className=" animate__animated animate__slideInDown hidden  z-20 bg-background fixed  justify-between items-center w-full max-w-[1468px] py-5 border-b-[0px] border-accent \ ">
         <Link className=" ml-5" to="/inventory" >
           <img src={viteLogo} className="logo " alt="Vite logo" />
         </Link>
@@ -27,8 +31,13 @@ function App() {
         />
 
         <NavLink
+        to="/inventory/scanner"
+        text="SCANNER"
+        />
+
+        <NavLink
         to="/inventory/page2"
-        text="ABOUT US"
+        text="LOGS"
         />
 
         <NavLink
@@ -56,7 +65,8 @@ function App() {
       <Outlet />
      
     </div>
-    </ThemeProvider>
+      </ThemeProvider>
+    </AuthProvider>
   )
 }
 
