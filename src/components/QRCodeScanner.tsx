@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { getInventoryItemByName, increaseQuantity, decreaseQuantity } from '@/services/inventoryCrud';
-import { AlertCircle, CheckCircle, Loader, Camera, X } from 'lucide-react';
+import { AlertCircle, CheckCircle, Loader, Camera, X,FlipHorizontal2Icon, Rotate3dIcon } from 'lucide-react';
 
 export const QRCodeScanner = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -8,6 +8,8 @@ export const QRCodeScanner = () => {
   const [scanning, setScanning] = useState(false);
   const [status, setStatus] = useState<'idle' | 'scanning' | 'processing' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState<string>('');
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const [isMirrored, setIsMirrored] = useState(false);
   
   // New states for quantity form
   const [scannedItem, setScannedItem] = useState<string | null>(null);
@@ -24,7 +26,7 @@ export const QRCodeScanner = () => {
       
       const constraints = {
         video: {
-          facingMode: 'environment',
+          facingMode: facingMode,
           width: { ideal: 1280 },
           height: { ideal: 720 }
         },
@@ -114,6 +116,25 @@ export const QRCodeScanner = () => {
     setScanning(false);
   };
 
+  // Flip camera between front and back
+  const flipCamera = async () => {
+    stopCamera();
+    const newFacingMode = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(newFacingMode);
+    setMessage(`Switching to ${newFacingMode === 'environment' ? 'back' : 'front'} camera...`);
+    
+    // Give a brief moment for state update, then restart camera
+    setTimeout(() => {
+      startCamera();
+    }, 100);
+  };
+
+  // Toggle mirror effect
+  const toggleMirror = () => {
+    setIsMirrored(!isMirrored);
+    setMessage(isMirrored ? 'Mirror off' : 'Mirror on');
+  };
+
   // Process item with user-selected quantity
   const handleConfirmQuantity = async () => {
     if (!scannedItem) return;
@@ -177,7 +198,10 @@ export const QRCodeScanner = () => {
           playsInline
           muted
           className="w-full h-full object-cover"
-          style={{ display: scanning ? 'block' : 'none', transform: scanning ? 'scaleX(-1)' : 'none' }}
+          style={{ 
+            display: scanning ? 'block' : 'none', 
+            transform: scanning ? `scaleX(-1) ${isMirrored ? 'scaleX(1)' : 'scaleX(-1)'}` : 'none'
+          }}
           onPlay={() => console.log('Video onPlay triggered')}
           onLoadedMetadata={() => console.log('Video onLoadedMetadata triggered')}
           onCanPlay={() => console.log('Video onCanPlay triggered')}
@@ -244,12 +268,34 @@ export const QRCodeScanner = () => {
       {/* Controls and Status - Bottom Bar */}
       <div className="relative px-4 sm:px-6 py-3 sm:py-4 border-t border-blue-200 bg-white shadow-lg space-y-3">
         {scanning && (
-          <button
-            onClick={stopCamera}
-            className="w-full px-4 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors duration-300 text-sm sm:text-base"
-          >
-            Stop Scanning
-          </button>
+          <div className="flex gap-2 sm:gap-3">
+            <button
+              onClick={stopCamera}
+              className="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors duration-300 text-sm sm:text-base"
+            >
+              Stop Scanning
+            </button>
+            <button
+              onClick={flipCamera}
+              className="px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors duration-300 text-sm sm:text-base flex items-center gap-2"
+              title="Flip camera"
+            >
+              <Rotate3dIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">Flip</span>
+            </button>
+            <button
+              onClick={toggleMirror}
+              className={`px-4 py-3 font-semibold rounded-lg transition-colors duration-300 text-sm sm:text-base flex items-center gap-2 ${
+                isMirrored
+                  ? 'bg-purple-500 hover:bg-purple-600 text-white'
+                  : 'bg-gray-300 hover:bg-gray-400 text-gray-700'
+              }`}
+              title="Mirror video"
+            >
+              <FlipHorizontal2Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">Mirror</span>
+            </button>
+          </div>
         )}
 
         {/* Status Messages */}
