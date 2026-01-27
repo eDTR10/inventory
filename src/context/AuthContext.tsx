@@ -43,6 +43,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     checkAuth();
+
+    // Listen for storage changes (e.g., when logging in from another tab)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'user_email' || e.key === 'google_access_token') {
+        console.log('📝 Storage change detected:', e.key);
+        const email = localStorage.getItem('user_email');
+        const token = localStorage.getItem('google_access_token');
+        setUserEmail(email);
+        setIsAuthenticated(!!token);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const login = async () => {
@@ -54,9 +68,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const token = await loginWithGoogle();
       if (token) {
         setIsAuthenticated(true);
+        // Give a moment for localStorage to be updated by the oauth callback
+        await new Promise(resolve => setTimeout(resolve, 500));
         const email = localStorage.getItem('user_email');
         setUserEmail(email);
-        console.log('✓ Login successful');
+        console.log('✓ Login successful for user:', email);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to login';
