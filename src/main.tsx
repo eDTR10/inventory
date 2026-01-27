@@ -24,6 +24,14 @@ const InventoryView= lazy(() =>
   wait(1000).then(() => import("./screens/inventoryView.tsx"))
 );
 
+const PrivacyPolicy= lazy(() =>
+  wait(1000).then(() => import("./screens/privacyPolicy.tsx"))
+);
+
+const TermsOfService= lazy(() =>
+  wait(1000).then(() => import("./screens/termsOfService.tsx"))
+);
+
 const router = createBrowserRouter([
   {
     path: "/inventory/",
@@ -63,6 +71,22 @@ const router = createBrowserRouter([
         element: <>
         <Suspense fallback={<Loader />}>
           <ItemDetail />
+        </Suspense>
+      </>,
+      },
+      {
+        path: "/inventory/privacy-policy",
+        element: <>
+        <Suspense fallback={<Loader />}>
+          <PrivacyPolicy />
+        </Suspense>
+      </>,
+      },
+      {
+        path: "/inventory/terms-of-service",
+        element: <>
+        <Suspense fallback={<Loader />}>
+          <TermsOfService />
         </Suspense>
       </>,
       },
