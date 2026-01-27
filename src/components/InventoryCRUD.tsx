@@ -140,7 +140,6 @@ export const InventoryCRUD = () => {
       const cellHeight = 70;
       const cols = 3;
       const colWidth = (pageWidth - margin * 2) / cols;
-      const usableWidth = pageWidth - margin * 2;
 
       let currentPage = 1;
       let itemIndex = 0;
@@ -152,7 +151,7 @@ export const InventoryCRUD = () => {
       pdf.text(`Generated: ${new Date().toLocaleDateString()}`, margin, margin + 7);
 
       let yPosition = margin + 15;
-      const pageStartY = yPosition;
+      
       const maxYPosition = pageHeight - margin;
 
       // Load and add QR codes
