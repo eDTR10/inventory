@@ -192,6 +192,12 @@ export const increaseQuantity = async (itemName: string, amount: number = 1): Pr
     });
 
     console.log(`✓ Quantity increased for "${itemName}" by ${amount}`);
+
+    // Log the action
+    await addLog(
+      'ADD_QUANTITY',
+      `Added ${amount} to ${itemName}. New quantity: ${item.quantity + amount}`
+    );
   } catch (error) {
     console.error('✗ Error increasing quantity:', error);
     throw error;
@@ -214,6 +220,12 @@ export const decreaseQuantity = async (itemName: string, amount: number = 1): Pr
     });
 
     console.log(`✓ Quantity decreased for "${itemName}" by ${amount}`);
+
+    // Log the action
+    await addLog(
+      'REMOVE_QUANTITY',
+      `Removed ${amount} from ${itemName}. New quantity: ${newQuantity}`
+    );
   } catch (error) {
     console.error('✗ Error decreasing quantity:', error);
     throw error;
