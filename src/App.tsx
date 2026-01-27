@@ -26,8 +26,13 @@ function App() {
         </Link>
         <nav className=" text-accent-foreground flex gap-10 uppercase items-center">
         <NavLink
-        to="/inventory/page1"
+        to="/inventory/home"
         text="HOME"
+        />
+
+        <NavLink
+        to="/inventory/page1"
+        text="ADMIN"
         />
 
         <NavLink

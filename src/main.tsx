@@ -32,6 +32,10 @@ const TermsOfService= lazy(() =>
   wait(1000).then(() => import("./screens/termsOfService.tsx"))
 );
 
+const HomePage= lazy(() =>
+  wait(1000).then(() => import("./screens/homePage.tsx"))
+);
+
 const router = createBrowserRouter([
   {
     path: "/inventory/",
@@ -40,7 +44,15 @@ const router = createBrowserRouter([
     children: [
       {
         path: "/inventory/", 
-        element: <Navigate to="/inventory/view" />, 
+        element: <Navigate to="/inventory/home" />, 
+      },
+      {
+        path: "/inventory/home",
+        element: <>
+        <Suspense fallback={<Loader />}>
+          <HomePage />
+        </Suspense>
+      </>,
       },
       {
         path: "/inventory/page1",
