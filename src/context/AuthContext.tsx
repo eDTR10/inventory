@@ -6,8 +6,12 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   userEmail: string | null;
+  emailInput: string;
+  setEmailInput: (email: string) => void;
+  googleTokenReceived: boolean;
   login: () => Promise<void>;
   logout: () => void;
+  confirmEmail: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,6 +21,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [emailInput, setEmailInput] = useState<string>('');
+  const [googleTokenReceived, setGoogleTokenReceived] = useState(false);
 
   // Check auth status on mount
   useEffect(() => {
@@ -67,12 +73,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.log('🔐 Starting login process...');
       const token = await loginWithGoogle();
       if (token) {
-        setIsAuthenticated(true);
+        setGoogleTokenReceived(true);
         // Give a moment for localStorage to be updated by the oauth callback
         await new Promise(resolve => setTimeout(resolve, 500));
         const email = localStorage.getItem('user_email');
-        setUserEmail(email);
-        console.log('✓ Login successful for user:', email);
+        
+        if (email) {
+          setUserEmail(email);
+          setIsAuthenticated(true);
+          console.log('✓ Login successful for user:', email);
+        } else {
+          // Email not retrieved, wait for user input
+          console.log('⚠ Google token received but email not available. Waiting for manual entry.');
+          setError(null);
+        }
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to login';
@@ -84,11 +98,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const confirmEmail = () => {
+    const trimmedEmail = emailInput.trim();
+    
+    if (!trimmedEmail) {
+      setError('Email is required to proceed');
+      return;
+    }
+
+    if (!trimmedEmail.includes('@')) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    localStorage.setItem('user_email', trimmedEmail);
+    setUserEmail(trimmedEmail);
+    setIsAuthenticated(true);
+    setEmailInput('');
+    console.log('✓ Email confirmed:', trimmedEmail);
+  };
+
   const logout = () => {
     localStorage.removeItem('google_access_token');
     localStorage.removeItem('user_email');
     setIsAuthenticated(false);
     setUserEmail(null);
+    setEmailInput('');
+    setGoogleTokenReceived(false);
     setError(null);
     console.log('✓ User logged out');
   };
@@ -100,8 +136,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isLoading,
         error,
         userEmail,
+        emailInput,
+        setEmailInput,
+        googleTokenReceived,
         login,
         logout,
+        confirmEmail,
       }}
     >
       {children}
