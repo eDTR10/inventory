@@ -16,8 +16,12 @@ const Page2= lazy(() =>
   wait(1300).then(() => import("./screens/page2.tsx"))
 );
 
-const ScannerPage= lazy(() =>
-  wait(1300).then(() => import("./screens/scanner.tsx"))
+const ItemDetail= lazy(() =>
+  wait(1000).then(() => import("./screens/itemDetail.tsx"))
+);
+
+const InventoryView= lazy(() =>
+  wait(1000).then(() => import("./screens/inventoryView.tsx"))
 );
 
 const router = createBrowserRouter([
@@ -28,7 +32,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: "/inventory/", 
-        element: <Navigate to="/inventory/scanner" />, 
+        element: <Navigate to="/inventory/view" />, 
       },
       {
         path: "/inventory/page1",
@@ -47,10 +51,18 @@ const router = createBrowserRouter([
       </>,
       },
       {
-        path: "/inventory/scanner",
+        path: "/inventory/view",
         element: <>
         <Suspense fallback={<Loader />}>
-          <ScannerPage />
+          <InventoryView />
+        </Suspense>
+      </>,
+      },
+      {
+        path: "/inventory/item/:itemName",
+        element: <>
+        <Suspense fallback={<Loader />}>
+          <ItemDetail />
         </Suspense>
       </>,
       },

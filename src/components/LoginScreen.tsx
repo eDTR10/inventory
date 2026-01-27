@@ -10,19 +10,16 @@ export const LoginScreen = () => {
         <div>
           <h1 className="text-4xl font-bold mb-2">Access Required</h1>
           <p className="text-lg text-muted-foreground">
-            You need to authenticate with Google to access the inventory system.
+            Welcome to DICT Misamis Oriental <br />  Inventory System. 
           </p>
         </div>
 
         <div className="bg-muted p-6 rounded-lg space-y-3 text-sm">
-          <p className="text-left">
-            <span className="font-semibold">Benefits:</span>
-          </p>
+       
           <ul className="text-left space-y-2">
-            <li>✓ Secure access to your inventory data</li>
-            <li>✓ Real-time synchronization with Google Sheets</li>
-            <li>✓ Full CRUD operations</li>
-            <li>✓ Automatic data backup</li>
+            <li> Please authenticate with Google to access the inventory features.</li>
+            
+
           </ul>
         </div>
 
@@ -41,7 +38,7 @@ export const LoginScreen = () => {
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Your data is secure and we only access what you allow.
+          Your data is secure because ...
         </p>
       </div>
     </div>

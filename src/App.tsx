@@ -31,11 +31,6 @@ function App() {
         />
 
         <NavLink
-        to="/inventory/scanner"
-        text="SCANNER"
-        />
-
-        <NavLink
         to="/inventory/page2"
         text="LOGS"
         />
