@@ -8,8 +8,8 @@
  * Returns a link to access the item page
  */
 export const generateQRCodeData = (itemName: string): string => {
-  // Get the base URL from current location
-  const baseUrl = window.location.origin;
+  // Use GitHub Pages URL for QR codes
+  const baseUrl = 'https://edtr10.github.io';
   // Return a link to the item page with the item name as a parameter
   return `${baseUrl}/inventory/item/${encodeURIComponent(itemName)}`;
 };
