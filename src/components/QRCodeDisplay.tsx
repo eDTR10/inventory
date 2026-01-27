@@ -17,14 +17,48 @@ export const QRCodeDisplay = ({ itemName, onClose }: QRCodeDisplayProps) => {
     try {
       const response = await fetch(qrUrl);
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${itemName}-qrcode.png`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      const img = new Image();
+      img.onload = () => {
+        // Create canvas with extra space for text
+        const canvas = document.createElement('canvas');
+        const padding = 30;
+        const textHeight = 60;
+        const canvasWidth = img.width + (padding * 2);
+        const canvasHeight = img.height + (padding * 2) + textHeight;
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // Set white background
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+        // Draw QR code image
+        ctx.drawImage(img, padding, padding);
+
+        // Add item name text below QR code
+        ctx.fillStyle = '#1f2937';
+        ctx.font = 'bold 20px Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${itemName}`, canvasWidth / 2, img.height + padding + 45);
+
+        // Download the canvas
+        canvas.toBlob((canvasBlob) => {
+          if (canvasBlob) {
+            const url = window.URL.createObjectURL(canvasBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${itemName}-qrcode.png`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+          }
+        });
+      };
+      img.src = URL.createObjectURL(blob);
     } catch (error) {
       console.error('Failed to download QR code:', error);
     }
