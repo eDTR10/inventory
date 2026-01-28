@@ -1,44 +1,84 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Package, Search, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Package, Search, X, ArrowUpDown } from 'lucide-react';
+
 import { Input } from '@/components/ui/input';
 import { LoginScreen } from '@/components/LoginScreen';
 import { useAuth } from '@/context/AuthContext';
-import useInventory from '@/hooks/useInventory';
+import axios from '@/plugin/axios';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from '@/components/ui/button';
+
+interface InventoryItem {
+  id: number;
+  name: string;
+  img?: string;
+  url?: string;
+  quantity: number;
+  date_created: string;
+  date_updated: string;
+}
 
 export const InventoryView = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { items, loading, error, initSheet, fetchItems } = useInventory();
   
-  const [initializing, setInitializing] = useState(true);
+  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const initRef = useRef(false);
+  const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'quantity-asc' | 'quantity-desc' | 'date-newest' | 'date-oldest'>('name-asc');
 
-  // Initialize and fetch item data - runs only once on mount
+  // Fetch items from API
   useEffect(() => {
-    if (initRef.current) return;
-    initRef.current = true;
-
-    const initialize = async () => {
+    const fetchItems = async () => {
       try {
-        setInitializing(true);
-        await initSheet();
-        await fetchItems();
-      } catch (err) {
-        console.error('Failed to initialize:', err);
+        setLoading(true);
+        setError(null);
+        const response = await axios.get<InventoryItem[]>('inventory/items/');
+        setItems(response.data);
+      } catch (err: any) {
+        setError(err.response?.data?.error || 'Failed to load items');
+        console.error('Failed to fetch items:', err);
       } finally {
-        setInitializing(false);
+        setLoading(false);
       }
     };
-    initialize();
-  }, []);
+
+    if (isAuthenticated) {
+      fetchItems();
+    }
+  }, [isAuthenticated]);
 
   // Filter items based on search query
   const filteredItems = items.filter((item) =>
-    item.itemName.toLowerCase().includes(searchQuery.toLowerCase())
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Sort filtered items
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    switch (sortBy) {
+      case 'name-asc':
+        return a.name.localeCompare(b.name);
+      case 'name-desc':
+        return b.name.localeCompare(a.name);
+      case 'quantity-asc':
+        return a.quantity - b.quantity;
+      case 'quantity-desc':
+        return b.quantity - a.quantity;
+      case 'date-newest':
+        return new Date(b.date_created).getTime() - new Date(a.date_created).getTime();
+      case 'date-oldest':
+        return new Date(a.date_created).getTime() - new Date(b.date_created).getTime();
+      default:
+        return 0;
+    }
+  });
 
   if (authLoading) {
     return (
@@ -62,7 +102,7 @@ export const InventoryView = () => {
     return <LoginScreen />;
   }
 
-  if (loading || initializing) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center w-full min-h-screen bg-gradient-to-br from-white to-blue-50">
         <div className="text-center">
@@ -92,47 +132,89 @@ export const InventoryView = () => {
       </div>
 
       <div className="max-w-4xl mx-auto relative z-10">
-        {/* Header */}
-        <div className="mb-8">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/inventory/page1')}
-            className="gap-2 border-blue-200 bg-white hover:bg-blue-50 text-blue-600 transition-all"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Back
-          </Button>
-        </div>
+ 
 
         {/* Title */}
-        <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Inventory Overview</h1>
-          <p className="text-gray-500 text-sm sm:text-base">View all items and their quantities</p>
+        <div className="mb-8 md:mb-6 sm:mb-5">
+          <h1 className="text-3xl md:text-2xl sm:text-xl font-bold text-gray-900 mb-2">Inventory Overview</h1>
+          <p className="text-gray-500 text-base md:text-sm sm:text-xs">View all items and their quantities</p>
         </div>
 
         {/* Search Bar */}
-        <div className="mb-8 relative">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Search items..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-10 py-3 text-sm sm:text-base border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all bg-white"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            )}
+        <div className="mb-8 md:mb-6 sm:mb-5 relative">
+          <div className="flex gap-3 md:gap-2 sm:gap-2 mb-3 md:mb-2 sm:mb-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 md:w-4 md:h-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search items..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-10 py-3 md:py-2 sm:py-2 text-base md:text-sm sm:text-xs border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all bg-white"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-5 h-5 md:w-4 md:h-4" />
+                </button>
+              )}
+            </div>
+            
+            {/* Sort Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="px-4 md:px-3 sm:px-3 py-3 md:py-2 sm:py-2 border-2 border-blue-200 hover:border-blue-300 bg-white"
+                >
+                  <ArrowUpDown className="w-5 h-5 md:w-4 md:h-4 sm:w-4 sm:h-4" />
+                  <span className="ml-2 text-base md:text-sm sm:text-xs md:hidden">Sort</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 md:w-44 sm:w-40">
+                <DropdownMenuItem 
+                  onClick={() => setSortBy('name-asc')}
+                  className={`cursor-pointer ${sortBy === 'name-asc' ? 'bg-blue-50 text-blue-600' : ''}`}
+                >
+                  <span className="text-sm md:text-xs sm:text-xs">Name (A-Z)</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setSortBy('name-desc')}
+                  className={`cursor-pointer ${sortBy === 'name-desc' ? 'bg-blue-50 text-blue-600' : ''}`}
+                >
+                  <span className="text-sm md:text-xs sm:text-xs">Name (Z-A)</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setSortBy('quantity-desc')}
+                  className={`cursor-pointer ${sortBy === 'quantity-desc' ? 'bg-blue-50 text-blue-600' : ''}`}
+                >
+                  <span className="text-sm md:text-xs sm:text-xs">Quantity (High-Low)</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setSortBy('quantity-asc')}
+                  className={`cursor-pointer ${sortBy === 'quantity-asc' ? 'bg-blue-50 text-blue-600' : ''}`}
+                >
+                  <span className="text-sm md:text-xs sm:text-xs">Quantity (Low-High)</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setSortBy('date-newest')}
+                  className={`cursor-pointer ${sortBy === 'date-newest' ? 'bg-blue-50 text-blue-600' : ''}`}
+                >
+                  <span className="text-sm md:text-xs sm:text-xs">Date (Newest First)</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setSortBy('date-oldest')}
+                  className={`cursor-pointer ${sortBy === 'date-oldest' ? 'bg-blue-50 text-blue-600' : ''}`}
+                >
+                  <span className="text-sm md:text-xs sm:text-xs">Date (Oldest First)</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           {searchQuery && (
-            <p className="text-xs sm:text-sm text-gray-500 mt-2">
+            <p className="text-sm md:text-xs sm:text-xs text-gray-500 mt-2">
               Found {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''}
             </p>
           )}
@@ -145,54 +227,54 @@ export const InventoryView = () => {
 
         {/* Items Grid or List */}
         {filteredItems.length === 0 ? (
-          <div className="text-center py-12">
-            <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">
+          <div className="text-center py-12 md:py-10 sm:py-8">
+            <Package className="w-16 h-16 md:w-14 md:h-14 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg md:text-base sm:text-sm">
               {searchQuery ? 'No items found matching your search' : 'No items in inventory'}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-2 gap-4">
-            {filteredItems.map((item) => (
+          <div className="grid grid-cols-3 md:grid-cols-2 sm:grid-cols-1 gap-4 md:gap-3 sm:gap-3">
+            {sortedItems.map((item) => (
               <div
                 key={item.id}
-                onClick={() => navigate(`/inventory/item/${encodeURIComponent(item.itemName)}`)}
+                onClick={() => navigate(`/inventory/item/${item.id}`)}
                 className="bg-white rounded-xl shadow-md border border-blue-100 hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer overflow-hidden group"
               >
                 {/* Item Image */}
-                <div className="relative w-full h-40 sm:h-38 bg-blue-50 overflow-hidden">
-                  {item.image ? (
+                <div className="relative w-full h-40 md:h-36 sm:h-32 bg-blue-50 overflow-hidden">
+                  {item.img ? (
                     <img
-                      src={item.image}
-                      alt={item.itemName}
+                      src={`${item.img}`}
+                      alt={item.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-blue-50">
-                      <span className="text-4xl">📦</span>
+                      <span className="text-4xl md:text-3xl sm:text-2xl">📦</span>
                     </div>
                   )}
                 </div>
 
                 {/* Item Info */}
-                <div className="p-4">
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 ">
-                    {item.itemName}
+                <div className="p-4 md:p-3 sm:p-3">
+                  <h3 className="text-lg md:text-base sm:text-sm font-bold text-gray-900 mb-3 md:mb-2 sm:mb-2">
+                    {item.name}
                   </h3>
 
                   {/* Quantity Display */}
-                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">
+                  <div className="p-3 md:p-2 sm:p-2 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-xs md:text-xs sm:text-[10px] font-semibold text-blue-600 uppercase tracking-wide mb-1">
                       Quantity in Stock
                     </p>
                     <div className="flex items-baseline gap-2">
-                      <p className="text-3xl font-bold text-blue-600">{item.quantity}</p>
-                      <p className="text-sm text-blue-500">Units</p>
+                      <p className="text-3xl md:text-2xl sm:text-xl font-bold text-blue-600">{item.quantity}</p>
+                      <p className="text-sm md:text-xs sm:text-xs text-blue-500">Units</p>
                     </div>
                   </div>
 
                   {/* Click to Edit Hint */}
-                  <p className="text-xs text-gray-400 text-center mt-3">Click to adjust quantity</p>
+                  <p className="text-xs md:text-xs sm:text-[10px] text-gray-400 text-center mt-3 md:mt-2 sm:mt-2">Click to adjust quantity</p>
                 </div>
               </div>
             ))}

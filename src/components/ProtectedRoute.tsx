@@ -1,58 +1,26 @@
 import { ReactNode } from 'react';
-import { isGoogleAuthenticated } from '@/plugin/axios';
-import { Button } from './ui/button';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  onLogin: () => void;
 }
 
-export const ProtectedRoute = ({ children, onLogin }: ProtectedRouteProps) => {
-  const isAuthenticated = isGoogleAuthenticated();
+export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+  const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
 
-  if (!isAuthenticated) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-background to-background/80">
-        <div className="text-center space-y-6 p-8 max-w-md">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Access Required</h1>
-            <p className="text-lg text-muted-foreground">
-              You need to authenticate with Google to access the inventory system.
-            </p>
-          </div>
-
-          <div className="bg-muted p-6 rounded-lg space-y-3 text-sm">
-            <p className="text-left">
-              <span className="font-semibold">Benefits:</span>
-            </p>
-            <ul className="text-left space-y-2">
-              <li>✓ Secure access to your inventory data</li>
-              <li>✓ Real-time synchronization with Google Sheets</li>
-              <li>✓ Full CRUD operations</li>
-              <li>✓ Automatic data backup</li>
-            </ul>
-          </div>
-
-          <Button
-            onClick={onLogin}
-            size="lg"
-            className="w-full"
-          >
-            Sign In with Google
-          </Button>
-
-          <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded text-xs text-left">
-            <p className="text-blue-900 dark:text-blue-100">
-              <span className="font-semibold">💡 Tip:</span> Check your browser console (F12) for detailed login information.
-            </p>
-          </div>
-
-          <p className="text-xs text-muted-foreground">
-            Your data is secure and we only access what you allow.
-          </p>
-        </div>
+      <div className="min-h-screen w-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
+  }
+
+  if (!isAuthenticated) {
+    // Save the location they were trying to access
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;

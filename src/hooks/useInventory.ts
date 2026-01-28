@@ -1,11 +1,25 @@
 import { useState, useCallback } from 'react';
-import * as inventoryService from '../services/inventoryCrud';
+import axios from '../plugin/axios';
 
 export interface InventoryItem {
-  id?: string;
-  itemName: string;
-  image?: string;
+  id?: number;
+  name: string;
+  img?: string;
+  url?: string;
   quantity: number;
+  date_created?: string;
+  date_updated?: string;
+}
+
+export interface InventoryLog {
+  id: number;
+  user: number;
+  user_email: string;
+  action: 'create' | 'update' | 'delete';
+  item: number;
+  item_name: string;
+  quantity: number;
+  date_created: string;
 }
 
 export const useInventory = () => {
@@ -18,9 +32,9 @@ export const useInventory = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await inventoryService.getAllInventoryItems();
-      setItems(data);
-      return data;
+      const response = await axios.get<InventoryItem[]>('inventory/items/');
+      setItems(response.data);
+      return response.data;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch items';
       setError(message);
@@ -30,12 +44,12 @@ export const useInventory = () => {
     }
   }, []);
 
-  // Get item by name
-  const getItem = useCallback(async (name: string) => {
+  // Get item by id
+  const getItem = useCallback(async (id: number) => {
     setError(null);
     try {
-      const item = await inventoryService.getInventoryItemByName(name);
-      return item;
+      const response = await axios.get<InventoryItem>(`inventory/items/${id}/`);
+      return response.data;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to get item';
       setError(message);
@@ -44,12 +58,15 @@ export const useInventory = () => {
   }, []);
 
   // Add item
-  const addItem = useCallback(async (item: InventoryItem) => {
+  const addItem = useCallback(async (item: Omit<InventoryItem, 'id' | 'date_created' | 'date_updated'> | FormData) => {
     setError(null);
     try {
-      await inventoryService.addInventoryItem(item);
+      const config = item instanceof FormData ? {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      } : {};
+      const response = await axios.post<InventoryItem>('inventory/items/', item, config);
       await fetchItems(); // Refresh list
-      return item;
+      return response.data;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to add item';
       setError(message);
@@ -57,24 +74,14 @@ export const useInventory = () => {
     }
   }, [fetchItems]);
 
-  // Add multiple items
-  const addItems = useCallback(async (newItems: InventoryItem[]) => {
-    setError(null);
-    try {
-      await inventoryService.addMultipleInventoryItems(newItems);
-      await fetchItems(); // Refresh list
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to add items';
-      setError(message);
-      throw err;
-    }
-  }, [fetchItems]);
-
   // Update item
-  const updateItem = useCallback(async (itemName: string, updatedData: Partial<InventoryItem>) => {
+  const updateItem = useCallback(async (id: number, updatedData: Partial<InventoryItem> | FormData) => {
     setError(null);
     try {
-      await inventoryService.updateInventoryItem(itemName, updatedData);
+      const config = updatedData instanceof FormData ? {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      } : {};
+      await axios.patch<InventoryItem>(`inventory/items/${id}/`, updatedData, config);
       await fetchItems(); // Refresh list
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to update item';
@@ -84,36 +91,45 @@ export const useInventory = () => {
   }, [fetchItems]);
 
   // Increase quantity
-  const addQuantity = useCallback(async (itemName: string, amount: number = 1) => {
+  const addQuantity = useCallback(async (id: number, amount: number = 1) => {
     setError(null);
     try {
-      await inventoryService.increaseQuantity(itemName, amount);
+      const item = items.find(i => i.id === id);
+      if (!item) throw new Error('Item not found');
+      await axios.patch<InventoryItem>(`inventory/items/${id}/`, {
+        quantity: item.quantity + amount
+      });
       await fetchItems(); // Refresh list
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to increase quantity';
       setError(message);
       throw err;
     }
-  }, [fetchItems]);
+  }, [fetchItems, items]);
 
   // Decrease quantity
-  const removeQuantity = useCallback(async (itemName: string, amount: number = 1) => {
+  const removeQuantity = useCallback(async (id: number, amount: number = 1) => {
     setError(null);
     try {
-      await inventoryService.decreaseQuantity(itemName, amount);
+      const item = items.find(i => i.id === id);
+      if (!item) throw new Error('Item not found');
+      const newQuantity = Math.max(0, item.quantity - amount);
+      await axios.patch<InventoryItem>(`inventory/items/${id}/`, {
+        quantity: newQuantity
+      });
       await fetchItems(); // Refresh list
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to decrease quantity';
       setError(message);
       throw err;
     }
-  }, [fetchItems]);
+  }, [fetchItems, items]);
 
   // Delete item
-  const deleteItem = useCallback(async (itemName: string) => {
+  const deleteItem = useCallback(async (id: number) => {
     setError(null);
     try {
-      await inventoryService.deleteInventoryItem(itemName);
+      await axios.delete(`inventory/items/${id}/`);
       await fetchItems(); // Refresh list
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to delete item';
@@ -122,26 +138,32 @@ export const useInventory = () => {
     }
   }, [fetchItems]);
 
-  // Clear all items
-  const clearAll = useCallback(async () => {
+  // Get logs for an item
+  const getItemLogs = useCallback(async (id: number) => {
     setError(null);
     try {
-      await inventoryService.clearAllInventory();
-      setItems([]);
+      const response = await axios.get<InventoryLog[]>(`inventory/items/${id}/logs/`);
+      return response.data;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to clear inventory';
+      const message = err instanceof Error ? err.message : 'Failed to get logs';
       setError(message);
       throw err;
     }
   }, []);
 
-  // Initialize sheet
-  const initSheet = useCallback(async () => {
+  // Get all logs with optional filters
+  const getLogs = useCallback(async (filters?: { item_id?: number; user_id?: number; action?: string }) => {
     setError(null);
     try {
-      await inventoryService.initializeSheet();
+      const params = new URLSearchParams();
+      if (filters?.item_id) params.append('item_id', filters.item_id.toString());
+      if (filters?.user_id) params.append('user_id', filters.user_id.toString());
+      if (filters?.action) params.append('action', filters.action);
+      
+      const response = await axios.get<InventoryLog[]>(`inventory/logs/?${params.toString()}`);
+      return response.data;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to initialize sheet';
+      const message = err instanceof Error ? err.message : 'Failed to get logs';
       setError(message);
       throw err;
     }
@@ -154,13 +176,12 @@ export const useInventory = () => {
     fetchItems,
     getItem,
     addItem,
-    addItems,
     updateItem,
     addQuantity,
     removeQuantity,
     deleteItem,
-    clearAll,
-    initSheet,
+    getItemLogs,
+    getLogs,
   };
 };
 

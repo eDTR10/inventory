@@ -1,5 +1,7 @@
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/context/AuthContext"
+import { GoogleOAuthProvider } from '@react-oauth/google'
+import { GOOGLE_CLIENT_ID } from '@/config/googleConfig'
 import UserProfile from "@/components/UserProfile"
 
 import viteLogo from "/vite.svg";
@@ -15,10 +17,11 @@ function App() {
 
 
   return (
-    <AuthProvider>
-      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-        <UserProfile />
-       <div className=" bg-background min-h-screen w-full overflow-hidden flex flex-col  items-center">
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <AuthProvider>
+        <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+          <UserProfile />
+        <div className=" bg-background min-h-screen w-full overflow-hidden flex flex-col  items-center">
       
       <nav className=" animate__animated animate__slideInDown hidden  z-20 bg-background fixed  justify-between items-center w-full max-w-[1468px] py-5 border-b-[0px] border-accent \ ">
         <Link className=" ml-5" to="/inventory" >
@@ -65,8 +68,9 @@ function App() {
       <Outlet />
      
     </div>
-      </ThemeProvider>
-    </AuthProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </GoogleOAuthProvider>
   )
 }
 

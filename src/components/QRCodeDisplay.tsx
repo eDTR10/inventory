@@ -5,13 +5,14 @@ import { Download, X, ExternalLink } from 'lucide-react';
 
 interface QRCodeDisplayProps {
   itemName: string;
+  itemId?: number;
   onClose?: () => void;
 }
 
-export const QRCodeDisplay = ({ itemName, onClose }: QRCodeDisplayProps) => {
+export const QRCodeDisplay = ({ itemName, itemId, onClose }: QRCodeDisplayProps) => {
   const [size, setSize] = useState(300);
   const qrUrl = getQRCodeImageUrl(itemName, size);
-  const itemLink = `https://edtr10.github.io//inventory/item/${encodeURIComponent(itemName)}`;
+  const itemLink = `${window.location.origin}/inventory/item/${itemId || encodeURIComponent(itemName)}`;
 
   const handleDownload = async () => {
     try {

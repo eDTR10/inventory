@@ -16,9 +16,6 @@ const Page2= lazy(() =>
   wait(1300).then(() => import("./screens/page2.tsx"))
 );
 
-const ItemDetail= lazy(() =>
-  wait(1000).then(() => import("./screens/itemDetail.tsx"))
-);
 
 const InventoryView= lazy(() =>
   wait(1000).then(() => import("./screens/inventoryView.tsx"))
@@ -34,6 +31,10 @@ const TermsOfService= lazy(() =>
 
 const HomePage= lazy(() =>
   wait(1000).then(() => import("./screens/homePage.tsx"))
+);
+
+const ItemDetailPublic= lazy(() =>
+  wait(1000).then(() => import("./screens/itemDetailPublic.tsx"))
 );
 
 const router = createBrowserRouter([
@@ -79,10 +80,10 @@ const router = createBrowserRouter([
       </>,
       },
       {
-        path: "/inventory/item/:itemName",
+        path: "/inventory/item/:identifier",
         element: <>
         <Suspense fallback={<Loader />}>
-          <ItemDetail />
+          <ItemDetailPublic />
         </Suspense>
       </>,
       },
