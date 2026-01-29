@@ -306,7 +306,7 @@ export const InventoryCRUD = () => {
 
         try {
           // Get QR code image
-          const qrUrl = getQRCodeImageUrl(item.name, 200);
+          const qrUrl = getQRCodeImageUrl(item.id?.toString() || item.name, 200);
           const response = await fetch(qrUrl);
           const blob = await response.blob();
           const reader = new FileReader();

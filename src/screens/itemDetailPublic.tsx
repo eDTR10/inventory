@@ -219,7 +219,7 @@ export const ItemDetailPage = () => {
           {item.img && (
             <div className="relative w-full flex items-center justify-center overflow-hidden bg-blue-50">
               <img
-                src={`${import.meta.env.VITE_URL}${item.img}`}
+                src={`${import.meta.env.VITE_BACKEND_URL}${item.img}`}
                 alt={item.name}
                 className="w-full max-h-64 md:max-h-48 object-cover"
               />

@@ -63,7 +63,7 @@ export const LoginScreen = () => {
         <div className="bg-muted p-6 rounded-lg space-y-3 text-sm">
           <ul className="text-left space-y-2">
             <li>✓ Please authenticate to access the inventory features.</li>
-            <li>✓ Your account will be created automatically on first sign-in.</li>
+            <li>✓ Your account will be created automatically on first sign-in using Google.</li>
           </ul>
         </div>
 

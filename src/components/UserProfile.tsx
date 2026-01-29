@@ -1,10 +1,10 @@
 import { useAuth } from '@/context/AuthContext';
 import { Button } from './ui/button';
-import { LogOut, User, LogIn, X } from 'lucide-react';
+import { LogOut, User, X } from 'lucide-react';
 import { useState } from 'react';
 
 export const UserProfile = () => {
-  const { isAuthenticated, userEmail, logout, login } = useAuth();
+  const { isAuthenticated, userEmail, logout } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleLogout = () => {
@@ -12,10 +12,6 @@ export const UserProfile = () => {
       logout();
       window.location.reload();
     }
-  };
-
-  const handleLogin = () => {
-    login();
   };
 
   const toggleExpand = () => {
@@ -74,23 +70,17 @@ export const UserProfile = () => {
             <>
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full">
-                  <LogIn className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  <User className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                    Sign in required
+                    Not signed in
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Please login to access features
                   </p>
                 </div>
               </div>
-
-              <Button
-                onClick={handleLogin}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                size="sm"
-              >
-                <LogIn className="w-4 h-4 mr-2" />
-                Sign In with Google
-              </Button>
             </>
           )}
         </div>

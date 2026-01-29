@@ -11,8 +11,8 @@ interface QRCodeDisplayProps {
 
 export const QRCodeDisplay = ({ itemName, itemId, onClose }: QRCodeDisplayProps) => {
   const [size, setSize] = useState(300);
-  const qrUrl = getQRCodeImageUrl(itemName, size);
-  const itemLink = `${window.location.origin}/inventory/item/${itemId || encodeURIComponent(itemName)}`;
+  const itemLink = `${import.meta.env.VITE_URL}/inventory/item/${itemId || encodeURIComponent(itemName)}`;
+  const qrUrl = getQRCodeImageUrl(itemId?.toString() || itemName, size);
 
   const handleDownload = async () => {
     try {
