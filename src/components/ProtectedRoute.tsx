@@ -20,7 +20,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (!isAuthenticated) {
     // Save the location they were trying to access
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/inventory/view" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;

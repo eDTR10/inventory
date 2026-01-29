@@ -5,6 +5,7 @@ import { Input } from './ui/input';
 import QRCodeDisplay from './QRCodeDisplay';
 import { QrCode, Download } from 'lucide-react';
 import { getQRCodeImageUrl } from '@/services/qrCodeService';
+import { jsPDF } from 'jspdf';
 
 export const InventoryCRUD = () => {
   const {
@@ -29,6 +30,7 @@ export const InventoryCRUD = () => {
   const [editingItem, setEditingItem] = useState<number | null>(null);
   const [selectedQRItem, setSelectedQRItem] = useState<{ name: string; id?: number } | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Initialize on mount
@@ -166,6 +168,9 @@ export const InventoryCRUD = () => {
       return;
     }
 
+    if (submitting) return; // Prevent duplicate submissions
+    setSubmitting(true);
+
     try {
       if (editingItem) {
         // For update, only send changed fields
@@ -215,6 +220,8 @@ export const InventoryCRUD = () => {
       setImagePreview(null);
     } catch (err) {
       console.error('Failed to save item:', err);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -231,6 +238,8 @@ export const InventoryCRUD = () => {
     if (item.img) {
       setImagePreview(item.img);
     }
+    // Scroll to top to show the form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Handle delete
@@ -268,8 +277,7 @@ export const InventoryCRUD = () => {
     setIsDownloading(true);
 
     try {
-      // Load jsPDF dynamically
-      const jsPDF = (await import('jspdf')).jsPDF;
+      // Create PDF
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -385,7 +393,6 @@ export const InventoryCRUD = () => {
               value={formData.name}
               onChange={handleInputChange}
               placeholder="e.g., Sack Bag"
-              disabled={!!editingItem}
             />
           </div>
 
@@ -432,9 +439,16 @@ export const InventoryCRUD = () => {
           </div>
         </div>
 
-        <div className="flex gap-2 md:flex-col">
-          <Button type="submit" className="md:w-full">
-            {editingItem ? 'Update Item' : 'Add Item'}
+        <div className="flex gap-2 md:flex-col mt-5">
+          <Button type="submit" className="md:w-full" disabled={submitting}>
+            {submitting ? (
+              <>
+                <span className="inline-block animate-spin mr-2">⏳</span>
+                {editingItem ? 'Updating...' : 'Adding...'}
+              </>
+            ) : (
+              editingItem ? 'Update Item' : 'Add Item'
+            )}
           </Button>
           {editingItem && (
             <Button
