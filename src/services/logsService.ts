@@ -177,3 +177,84 @@ export default {
   initializeLogsSheet,
   clearAllLogs,
 };
+
+/**
+ * Get log summary statistics from the backend API
+ */
+export interface LogSummary {
+  period: string;
+  start_date: string;
+  end_date: string;
+  summary: {
+    added: {
+      total_quantity: number;
+      transaction_count: number;
+    };
+    deducted: {
+      total_quantity: number;
+      transaction_count: number;
+    };
+    net_change: number;
+  };
+  top_items: {
+    most_added: Array<{
+      item__id: number;
+      item__name: string;
+      total: number;
+    }>;
+    most_deducted: Array<{
+      item__id: number;
+      item__name: string;
+      total: number;
+    }>;
+  };
+  user_activity: Array<{
+    user_id: number;
+    name: string;
+    email: string;
+    total_actions: number;
+    added: number;
+    deducted: number;
+  }>;
+}
+
+/**
+ * Get log summary for a specific period
+ * @param period - 'today', 'this_week', 'this_month', 'this_year'
+ */
+export const getLogSummary = async (
+  period: 'today' | 'this_week' | 'this_month' | 'this_year' = 'today'
+): Promise<LogSummary> => {
+  try {
+    const response = await axios.get(`/inventory/logs/summary/`, {
+      params: { period }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching log summary:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get log summary for a custom date range
+ * @param startDate - ISO date string (YYYY-MM-DD)
+ * @param endDate - ISO date string (YYYY-MM-DD)
+ */
+export const getLogSummaryByDateRange = async (
+  startDate: string,
+  endDate: string
+): Promise<LogSummary> => {
+  try {
+    const response = await axios.get(`/inventory/logs/summary/`, {
+      params: {
+        start_date: startDate,
+        end_date: endDate
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching log summary:', error);
+    throw error;
+  }
+};

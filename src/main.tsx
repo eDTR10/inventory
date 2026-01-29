@@ -37,6 +37,10 @@ const ItemDetailPublic= lazy(() =>
   wait(1000).then(() => import("./screens/itemDetailPublic.tsx"))
 );
 
+const LogSummaryPage= lazy(() =>
+  wait(1000).then(() => import("./screens/logSummary.tsx"))
+);
+
 const router = createBrowserRouter([
   {
     path: "/inventory/",
@@ -100,6 +104,14 @@ const router = createBrowserRouter([
         element: <>
         <Suspense fallback={<Loader />}>
           <TermsOfService />
+        </Suspense>
+      </>,
+      },
+      {
+        path: "/inventory/summary",
+        element: <>
+        <Suspense fallback={<Loader />}>
+          <LogSummaryPage />
         </Suspense>
       </>,
       },
