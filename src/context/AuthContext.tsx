@@ -144,6 +144,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.setItem('user_email', user.email);
       localStorage.setItem('user_name', `${user.first_name} ${user.last_name}`);
       localStorage.setItem('user_id', user.id.toString());
+      localStorage.setItem('user_acc_lvl', user.acc_lvl?.toString() || '3');
     
 
       // Update state

@@ -289,6 +289,7 @@ export const InventoryCRUD = () => {
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 10;
       const qrSize = 50; // QR code size in mm
+      const qrBorderPadding = 1; // border padding in mm for easier cutting
       const cellHeight = 70;
       const cols = 3;
       const colWidth = (pageWidth - margin * 2) / cols;
@@ -324,7 +325,19 @@ export const InventoryCRUD = () => {
               try {
                 const imgData = reader.result as string;
                 // Add QR code to PDF
-                pdf.addImage(imgData, 'PNG', xPosition + 5, yPosition, qrSize, qrSize);
+                const qrX = xPosition + 5;
+                const qrY = yPosition;
+                pdf.addImage(imgData, 'PNG', qrX, qrY, qrSize, qrSize);
+
+                // Draw border around QR for cutting guide
+                pdf.setDrawColor(0);
+                pdf.setLineWidth(0.2);
+                pdf.rect(
+                  qrX - qrBorderPadding,
+                  qrY - qrBorderPadding,
+                  qrSize + qrBorderPadding * 2,
+                  qrSize + qrBorderPadding * 2
+                );
 
                 // Add item name
                 pdf.setFontSize(8);
@@ -403,6 +416,7 @@ export const InventoryCRUD = () => {
               name="img"
               onChange={handleFileChange}
               accept="image/*"
+              capture="environment"
               className="cursor-pointer"
             />
             {imagePreview && (
