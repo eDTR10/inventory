@@ -26,12 +26,17 @@ export const InventoryCRUD = () => {
     img: null as File | null,
     url: '',
     quantity: 0,
+    has_sizes: false,
+    size_quantities: {} as { [key: string]: number },
+    location: '',
   });
   const [editingItem, setEditingItem] = useState<number | null>(null);
   const [selectedQRItem, setSelectedQRItem] = useState<{ name: string; id?: number } | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [newSizeName, setNewSizeName] = useState<string>('');
+  const [showAddSize, setShowAddSize] = useState<boolean>(false);
 
   // Initialize on mount
   useEffect(() => {
@@ -44,6 +49,63 @@ export const InventoryCRUD = () => {
     setFormData(prev => ({
       ...prev,
       [name]: name === 'quantity' ? parseInt(value) || 0 : value,
+    }));
+  };
+
+  // Handle size quantity change
+  const handleSizeQuantityChange = (size: string, value: number) => {
+    setFormData(prev => ({
+      ...prev,
+      size_quantities: {
+        ...prev.size_quantities,
+        [size]: value,
+      },
+    }));
+  };
+
+  // Add new size variation
+  const handleAddSize = () => {
+    if (!newSizeName.trim()) return;
+    
+    const sizeName = newSizeName.trim().toLowerCase();
+    
+    // Check if size already exists
+    if (formData.size_quantities[sizeName] !== undefined) {
+      alert('This size already exists!');
+      return;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      size_quantities: {
+        ...prev.size_quantities,
+        [sizeName]: 0,
+      },
+    }));
+    
+    setNewSizeName('');
+    setShowAddSize(false);
+  };
+
+  // Remove size variation
+  const handleRemoveSize = (size: string) => {
+    setFormData(prev => {
+      const newSizeQuantities = { ...prev.size_quantities };
+      delete newSizeQuantities[size];
+      return {
+        ...prev,
+        size_quantities: newSizeQuantities,
+      };
+    });
+  };
+
+  // Toggle has_sizes
+  const toggleHasSizes = () => {
+    setFormData(prev => ({
+      ...prev,
+      has_sizes: !prev.has_sizes,
+      size_quantities: !prev.has_sizes ? { small: 0, medium: 0, large: 0 } as { [key: string]: number } : {} as { [key: string]: number },
+      quantity: !prev.has_sizes ? 0 : prev.quantity,
     }));
   };
 
@@ -177,7 +239,13 @@ export const InventoryCRUD = () => {
         const updateData: any = {};
         if (formData.name) updateData.name = formData.name;
         if (formData.url) updateData.url = formData.url;
-        if (formData.quantity !== undefined) updateData.quantity = formData.quantity;
+        if (formData.has_sizes !== undefined) {
+          updateData.has_sizes = formData.has_sizes;
+          updateData.size_quantities = formData.size_quantities;
+        } else if (formData.quantity !== undefined) {
+          updateData.quantity = formData.quantity;
+        }
+        if (formData.location !== undefined) updateData.location = formData.location;
         
         // If there's a new image file, we need to use FormData
         if (formData.img) {
@@ -195,9 +263,16 @@ export const InventoryCRUD = () => {
         // For create, use FormData if there's an image
         const dataToSend: any = {
           name: formData.name,
-          quantity: formData.quantity,
+          has_sizes: formData.has_sizes,
         };
         if (formData.url) dataToSend.url = formData.url;
+        if (formData.location) dataToSend.location = formData.location;
+        
+        if (formData.has_sizes) {
+          dataToSend.size_quantities = formData.size_quantities;
+        } else {
+          dataToSend.quantity = formData.quantity;
+        }
         
         if (formData.img) {
           const formDataToSend = new FormData();
@@ -216,6 +291,9 @@ export const InventoryCRUD = () => {
         img: null,
         url: '',
         quantity: 0,
+        has_sizes: false,
+        size_quantities: {},
+        location: '',
       });
       setImagePreview(null);
     } catch (err) {
@@ -232,6 +310,9 @@ export const InventoryCRUD = () => {
       img: null, // Can't pre-populate file input, but show preview
       url: item.url || '',
       quantity: item.quantity,
+      has_sizes: item.has_sizes || false,
+      size_quantities: item.size_quantities || {},
+      location: item.location || '',
     });
     setEditingItem(item.id!);
     // Set preview to existing image URL if available
@@ -449,6 +530,107 @@ export const InventoryCRUD = () => {
               value={formData.quantity}
               onChange={handleInputChange}
               placeholder="0"
+              disabled={formData.has_sizes}
+            />
+          </div>
+
+          <div className="col-span-4 lg:col-span-2 md:col-span-1">
+            <label className="flex items-center gap-2 text-sm font-medium mb-2">
+              <input
+                type="checkbox"
+                checked={formData.has_sizes}
+                onChange={toggleHasSizes}
+                className="w-4 h-4 rounded border-gray-300"
+              />
+              <span>This item has size variations</span>
+            </label>
+          </div>
+
+          {formData.has_sizes && (
+            <div className="col-span-4 lg:col-span-2 md:col-span-1 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-sm font-semibold">Size Quantities</h3>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowAddSize(!showAddSize)}
+                  className="text-xs"
+                >
+                  {showAddSize ? 'Cancel' : '+ Add Size'}
+                </Button>
+              </div>
+
+              {showAddSize && (
+                <div className="mb-3 p-3 bg-white rounded border border-blue-200">
+                  <label className="block text-xs font-medium mb-1">New Size Name</label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      value={newSizeName}
+                      onChange={(e) => setNewSizeName(e.target.value)}
+                      placeholder="e.g., XXL, XS"
+                      className="flex-1"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddSize();
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleAddSize}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      Add
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-3 gap-3">
+                {Object.keys(formData.size_quantities).map((size) => (
+                  <div key={size} className="relative">
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-xs font-medium capitalize">{size}</label>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSize(size)}
+                        className="text-red-500 hover:text-red-700 text-xs"
+                        title="Remove size"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <Input
+                      type="number"
+                      value={formData.size_quantities[size] || 0}
+                      onChange={(e) => handleSizeQuantityChange(size, parseInt(e.target.value) || 0)}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {Object.keys(formData.size_quantities).length === 0 && (
+                <p className="text-xs text-gray-500 text-center py-2">
+                  No sizes added yet. Click "+ Add Size" to add variations.
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="col-span-4 lg:col-span-2 md:col-span-1">
+            <label className="block text-sm font-medium mb-2">Location</label>
+            <Input
+              type="text"
+              name="location"
+              value={formData.location}
+              onChange={handleInputChange}
+              placeholder="e.g., Warehouse A, Shelf 3"
             />
           </div>
         </div>
@@ -476,6 +658,9 @@ export const InventoryCRUD = () => {
                   img: null,
                   url: '',
                   quantity: 0,
+                  has_sizes: false,
+                  size_quantities: {},
+                  location: '',
                 });
                 setImagePreview(null);
               }}
@@ -526,6 +711,7 @@ export const InventoryCRUD = () => {
                     <th className="border p-3 md:p-2 text-left text-sm md:text-xs">Item Name</th>
                     <th className="border p-3 md:p-2 text-left text-sm md:text-xs">Image</th>
                     <th className="border p-3 md:p-2 text-left text-sm md:text-xs slg:hidden">URL</th>
+                    <th className="border p-3 md:p-2 text-left text-sm md:text-xs slg:hidden">Location</th>
                     <th className="border p-3 md:p-2 text-right text-sm md:text-xs">Quantity</th>
                     <th className="border p-3 md:p-2 text-center text-sm md:text-xs lg:hidden">QR Code</th>
                     <th className="border p-3 md:p-2 text-center text-sm md:text-xs">Actions</th>
@@ -559,22 +745,38 @@ export const InventoryCRUD = () => {
                           <span className="text-gray-400 text-sm md:text-xs">-</span>
                         )}
                       </td>
+                      <td className="border p-3 md:p-2 slg:hidden">
+                        <span className="text-sm md:text-xs">{item.location || '-'}</span>
+                      </td>
                       <td className="border p-3 md:p-2 text-right">
-                        <div className="flex items-center justify-end gap-2 md:gap-1">
-                          <button
-                            onClick={() => handleQuantityChange(item.id!, 'remove')}
-                            className="px-2 py-1 md:px-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200 text-sm md:text-xs"
-                          >
-                            -
-                          </button>
-                          <span className="w-8 md:w-6 text-center font-semibold text-sm md:text-xs">{item.quantity}</span>
-                          <button
-                            onClick={() => handleQuantityChange(item.id!, 'add')}
-                            className="px-2 py-1 md:px-1.5 bg-green-100 text-green-700 rounded hover:bg-green-200 text-sm md:text-xs"
-                          >
-                            +
-                          </button>
-                        </div>
+                        {item.has_sizes && item.size_quantities ? (
+                          <div className="text-sm md:text-xs">
+                            <div className="font-semibold mb-1">Total: {item.quantity}</div>
+                            <div className="text-xs text-gray-600 space-y-0.5">
+                              {Object.entries(item.size_quantities).map(([size, qty]) => (
+                                <div key={size} className="capitalize">
+                                  {size}: {qty}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-end gap-2 md:gap-1">
+                            <button
+                              onClick={() => handleQuantityChange(item.id!, 'remove')}
+                              className="px-2 py-1 md:px-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200 text-sm md:text-xs"
+                            >
+                              -
+                            </button>
+                            <span className="w-8 md:w-6 text-center font-semibold text-sm md:text-xs">{item.quantity}</span>
+                            <button
+                              onClick={() => handleQuantityChange(item.id!, 'add')}
+                              className="px-2 py-1 md:px-1.5 bg-green-100 text-green-700 rounded hover:bg-green-200 text-sm md:text-xs"
+                            >
+                              +
+                            </button>
+                          </div>
+                        )}
                       </td>
                       <td className="border p-3 md:p-2 text-center lg:hidden">
                         <Button

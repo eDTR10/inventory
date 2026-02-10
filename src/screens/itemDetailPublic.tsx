@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, } from 'react-router-dom';
-import { ArrowLeft, Plus, Minus, Package } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, Package, LocateIcon, PinIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { LoginScreen } from '@/components/LoginScreen';
@@ -14,6 +14,9 @@ interface ItemDetailData {
   img?: string;
   url?: string;
   quantity: number;
+  has_sizes?: boolean;
+  size_quantities?: { [key: string]: number };
+  location?: string;
   date_created: string;
   date_updated: string;
 }
@@ -27,7 +30,8 @@ export const ItemDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
-  const [customAmount, setCustomAmount] = useState<string>('0');
+  const [customAmount, setCustomAmount] = useState<string>('1');
+  const [selectedSize, setSelectedSize] = useState<string>('');
   const [holdInterval, setHoldInterval] = useState<NodeJS.Timeout | null>(null);
 
   const fetchItem = async () => {
@@ -51,15 +55,40 @@ export const ItemDetailPage = () => {
     }
   }, [identifier, isAuthenticated]);
 
+  // Set default size when item loads
+  useEffect(() => {
+    if (item?.has_sizes && item.size_quantities && Object.keys(item.size_quantities).length > 0) {
+      setSelectedSize(Object.keys(item.size_quantities)[0]);
+    }
+  }, [item]);
+
   const updateQuantity = async (action: 'add' | 'subtract', amount: number = 1) => {
     if (!item) return;
     
+    // If item has sizes, size must be selected
+    if (item.has_sizes && !selectedSize) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Size Required',
+        text: 'Please select a size',
+        confirmButtonColor: '#2563eb'
+      });
+      return;
+    }
+    
     setUpdating(true);
     try {
-      const response = await axios.patch<ItemDetailData>(`inventory/public/item/${identifier}/`, {
+      const requestData: any = {
         action,
         quantity: amount,
-      });
+      };
+      
+      // Add size if item has sizes
+      if (item.has_sizes && selectedSize) {
+        requestData.size = selectedSize;
+      }
+      
+      const response = await axios.patch<ItemDetailData>(`inventory/public/item/${identifier}/`, requestData);
       setItem(response.data);
       setCustomAmount('1'); // Reset to 1 after successful update
       
@@ -228,20 +257,67 @@ export const ItemDetailPage = () => {
 
           {/* Content Section */}
           <div className="p-8 md:p-6 sm:p-4">
+           <div className=' flex justify-between'>
+
            
-            <h1 className="text-3xl md:text-2xl sm:text-xl font-bold mb-8 md:mb-6 sm:mb-4 text-center text-gray-900">
-              {item.name}
+            <h1 className="text-3xl text-left md:text-2xl sm:text-xl font-bold mb-8 md:mb-6 sm:mb-4  text-gray-900">
+              {item.name} asdasdas asdas dasd asdsada
             </h1>
+
+             {item.location && (
+              <div className="mb-6 md:mb-4 w-[100px] ">
+                  <LocateIcon className="w-5 h-5 inline-block mr-1 text-gray-500" />
+                  <span className="text-sm font-semibold text-gray-900">{item.location}</span>
+                
+              </div>
+            )}
+</div>
+            {/* Size and Location Info */}
+           
+
+            {/* Size Selection for items with sizes */}
+            {item.has_sizes && item.size_quantities && (
+              <div className="mb-6 md:mb-4">
+                <label className="block text-sm font-semibold text-blue-600 uppercase tracking-wide mb-2">
+                  Select Size
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {Object.keys(item.size_quantities).map((size) => (
+                    <button
+                      key={size}
+                      onClick={() => setSelectedSize(size)}
+                      className={`p-3 rounded-lg border-2 capitalize font-medium transition-all ${
+                        selectedSize === size
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300'
+                      }`}
+                    >
+                      {size}
+                      <div className="text-xs mt-1">Qty: {item.size_quantities![size]}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Quantity Display */}
             <div className="mb-8 md:mb-6 sm:mb-4">
               <div className="mb-6 md:mb-4 text-center">
                 <div className="p-4 md:p-3 sm:p-3 bg-blue-50 rounded-xl border border-blue-200">
-                  <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">Current Quantity</p>
+                  <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">
+                    {item.has_sizes ? `${selectedSize ? selectedSize.charAt(0).toUpperCase() + selectedSize.slice(1) + ' ' : ''}Quantity` : 'Current Quantity'}
+                  </p>
                   <div className="flex items-baseline justify-center gap-2">
-                    <p className="text-6xl md:text-5xl sm:text-4xl font-bold text-blue-600">{item.quantity}</p>
+                    <p className="text-6xl md:text-5xl sm:text-4xl font-bold text-blue-600">
+                      {item.has_sizes && selectedSize && item.size_quantities 
+                        ? item.size_quantities[selectedSize] 
+                        : item.quantity}
+                    </p>
                     <p className="text-lg md:text-base sm:text-sm text-blue-500">Units</p>
                   </div>
+                  {item.has_sizes && (
+                    <p className="text-xs text-blue-500 mt-2">Total: {item.quantity} units</p>
+                  )}
                 </div>
               </div>
 

@@ -20,6 +20,9 @@ interface InventoryItem {
   img?: string;
   url?: string;
   quantity: number;
+  has_sizes?: boolean;
+  size_quantities?: { [key: string]: number };
+  location?: string;
   date_created: string;
   date_updated: string;
 }
