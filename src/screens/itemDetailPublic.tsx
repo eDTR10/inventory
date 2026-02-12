@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, } from 'react-router-dom';
-import { ArrowLeft, Plus, Minus, Package, LocateIcon, PinIcon } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, Package, LocateIcon,  } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { LoginScreen } from '@/components/LoginScreen';
@@ -261,7 +261,7 @@ export const ItemDetailPage = () => {
 
            
             <h1 className="text-3xl text-left md:text-2xl sm:text-xl font-bold mb-8 md:mb-6 sm:mb-4  text-gray-900">
-              {item.name} asdasdas asdas dasd asdsada
+              {item.name} 
             </h1>
 
              {item.location && (
