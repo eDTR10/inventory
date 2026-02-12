@@ -596,7 +596,7 @@ export const LogSummaryPage = () => {
                                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
                                     : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                                 }`}>
-                                  {log.action_display || (log.transaction === 'add' ? 'Added' : 'Deducted')} ({log.size ? `(${log.size})` : ''})
+                                  {log.action_display || (log.transaction === 'add' ? 'Added' : 'Deducted')}
                                 </span>
                               </td>
                               <td className={`text-right p-2 sm:p-3 font-semibold ${
