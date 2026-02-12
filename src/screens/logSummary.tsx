@@ -12,10 +12,12 @@ interface UserLog {
   user_name: string;
   user_email: string;
   action: string;
+  action_display: string;
   transaction: string;
   item_id: number;
   item_name: string;
   quantity: number;
+  size?: string;
   date_created: string;
 }
 
@@ -594,7 +596,7 @@ export const LogSummaryPage = () => {
                                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
                                     : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                                 }`}>
-                                  {log.transaction === 'add' ? 'Added' : 'Deducted'}
+                                  {log.action_display || (log.transaction === 'add' ? 'Added' : 'Deducted')} ({log.size ? `(${log.size})` : ''})
                                 </span>
                               </td>
                               <td className={`text-right p-2 sm:p-3 font-semibold ${
@@ -726,7 +728,7 @@ export const LogSummaryPage = () => {
                                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
                                     : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                                 }`}>
-                                  {log.transaction === 'add' ? 'Added' : 'Deducted'}
+                                  {log.action_display || (log.transaction === 'add' ? 'Added' : 'Deducted')}
                                 </span>
                               </td>
                               <td className={`text-right p-2 sm:p-3 font-semibold ${
